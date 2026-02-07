@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Domain\Auth\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class LoginRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'email' => 'required|email',
+            'password' => 'required|string|min:8',
+            'rememberMe' => 'sometimes|boolean',
+        ];
+    }
+
+    public function defaults(): array
+    {
+        return [
+            'rememberMe' => true,
+        ];
+    }
+}
