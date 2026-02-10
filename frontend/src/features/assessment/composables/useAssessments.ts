@@ -22,6 +22,9 @@ export function useAssessments(filters: Ref<AssessmentFilters>) {
       if (cleanedFilters.status === "all") {
         delete cleanedFilters.status;
       }
+      if (cleanedFilters.organizationId === "all") {
+        delete cleanedFilters.organizationId;
+      }
       if (!cleanedFilters.search || cleanedFilters.search.trim() === "") {
         delete cleanedFilters.search;
       }

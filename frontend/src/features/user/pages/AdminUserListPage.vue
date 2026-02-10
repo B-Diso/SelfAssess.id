@@ -386,7 +386,7 @@ function resetFilters() {
                 <SelectValue placeholder="All Organizations" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Organizations</SelectItem>
+                <SelectItem value="all">All Organizations</SelectItem>
                 <SelectItem
                   v-for="org in organizations"
                   :key="org.id"
@@ -402,7 +402,7 @@ function resetFilters() {
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem
                   v-for="role in roleFilterOptions"
                   :key="role"

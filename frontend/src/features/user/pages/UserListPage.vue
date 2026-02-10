@@ -327,7 +327,7 @@ function resetFilters() {
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem
                   v-for="role in roleFilterOptions"
                   :key="role"

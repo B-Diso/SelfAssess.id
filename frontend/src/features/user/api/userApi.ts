@@ -16,7 +16,7 @@ export const userApi = {
     if (params && params.role === 'all') {
       delete params.role
     }
-    if (params && params.organizationId === '') {
+    if (params && params.organizationId === 'all') {
       delete params.organizationId
     }
     const response = await apiClient.get<PaginatedResponse<User>>('/users', {

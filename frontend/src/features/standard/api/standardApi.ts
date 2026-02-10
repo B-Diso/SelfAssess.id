@@ -44,7 +44,7 @@ export const standardApi = {
   ): Promise<PaginatedResponse<Standard>> {
     const params = filters
       ? {
-          type: filters.type === "" ? undefined : filters.type,
+          type: filters.type === "" || filters.type === "all" ? undefined : filters.type,
           isActive: filters.isActive,
           search: filters.search,
           perPage: filters.perPage,

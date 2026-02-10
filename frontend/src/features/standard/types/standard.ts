@@ -122,7 +122,7 @@ export interface UpdateRequirementRequest {
 // ============================================================================
 
 export interface StandardFilters {
-  type?: StandardType | "";
+  type?: StandardType | "" | "all";
   isActive?: boolean;
   search?: string;
   perPage?: number;

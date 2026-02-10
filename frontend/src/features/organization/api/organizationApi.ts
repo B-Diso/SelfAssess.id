@@ -11,12 +11,12 @@ import type {
 export const organizationApi = {
   // GET /organizations - List organizations
   async getOrganizations(filters?: OrganizationFilters): Promise<PaginatedResponse<Organization>> {
-    // Filter out undefined/null/empty values to avoid sending unnecessary params
+    // Filter out undefined/null/empty/"all" values to avoid sending unnecessary params
     const params = filters ? { ...filters } : undefined
     if (params) {
       Object.keys(params).forEach(key => {
         const value = params[key as keyof OrganizationFilters]
-        if (value === undefined || value === null || value === '') {
+        if (value === undefined || value === null || value === '' || value === 'all') {
           delete params[key as keyof OrganizationFilters]
         }
       })
