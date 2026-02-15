@@ -82,46 +82,69 @@ export const useUserStore = defineStore('user', () => {
     if (user.value) {
       user.value = { ...user.value, ...userData }
     } else {
-      user.value = userData as User
+      // Validate that userData has required properties before assignment
+      if (userData && typeof userData === 'object' && 'id' in userData) {
+        user.value = userData as User
+      } else {
+        console.error('Invalid user data provided to updateUser')
+        return
+      }
     }
-    localStorage.setItem(USER_DATA_KEY, JSON.stringify(user.value))
+    if (user.value) {
+      localStorage.setItem(USER_DATA_KEY, JSON.stringify(user.value))
+    }
   }
 
   function hasPermission(permission: string): boolean {
-    return user.value?.permissions.includes(permission) || false
+    // Guard: Ensure user and permissions exist
+    if (!user.value || !user.value.permissions) {
+      return false
+    }
+    return user.value.permissions.includes(permission)
   }
 
   function hasRole(role: string): boolean {
-    return user.value?.roles.includes(role) || false
+    // Guard: Ensure user and roles exist
+    if (!user.value || !user.value.roles) {
+      return false
+    }
+    return user.value.roles.includes(role)
   }
 
   function hasAnyPermission(permissions: string[]): boolean {
     if (!user.value || permissions.length === 0) return false
-    return permissions.some(permission => user.value!.permissions.includes(permission))
+    return permissions.some(permission => user.value?.permissions?.includes(permission) ?? false)
   }
 
   function hasAllPermissions(permissions: string[]): boolean {
     if (!user.value || permissions.length === 0) return false
-    return permissions.every(permission => user.value!.permissions.includes(permission))
+    return permissions.every(permission => user.value?.permissions?.includes(permission) ?? false)
   }
 
   function hasAnyRole(roles: string[]): boolean {
     if (!user.value || roles.length === 0) return false
-    return roles.some(role => user.value!.roles.includes(role))
+    return roles.some(role => user.value?.roles?.includes(role) ?? false)
   }
 
   function hasAllRoles(roles: string[]): boolean {
     if (!user.value || roles.length === 0) return false
-    return roles.every(role => user.value!.roles.includes(role))
+    return roles.every(role => user.value?.roles?.includes(role) ?? false)
   }
 
   // Rehydrate user data from localStorage
   function rehydrate() {
     const storedUserData = localStorage.getItem(USER_DATA_KEY)
     
-    if (storedUserData) {
+    if (storedUserData && storedUserData !== 'null' && storedUserData !== 'undefined') {
       try {
-        user.value = JSON.parse(storedUserData)
+        const parsed = JSON.parse(storedUserData)
+        // Validate the parsed data has required User properties
+        if (parsed && typeof parsed === 'object' && 'id' in parsed) {
+          user.value = parsed as User
+        } else {
+          console.warn('Invalid user data format in localStorage')
+          localStorage.removeItem(USER_DATA_KEY)
+        }
       } catch (err) {
         console.error('Failed to parse stored user data:', err)
         localStorage.removeItem(USER_DATA_KEY)
@@ -143,9 +166,11 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // Watch for auth changes to automatically fetch/clear user data
-  const authStore = useAuthStore()
   watch(
-    () => authStore.isAuthenticated,
+    () => {
+      const authStore = useAuthStore()
+      return authStore.isAuthenticated
+    },
     async (isAuthenticated) => {
       if (isAuthenticated) {
         await fetchUser()
@@ -156,8 +181,8 @@ export const useUserStore = defineStore('user', () => {
     { immediate: false }
   )
 
-  // Initialize on store creation
-  initialize()
+  // Note: initialize() is not called automatically here
+  // Components or router should call initialize() explicitly when needed
 
   return {
     // State

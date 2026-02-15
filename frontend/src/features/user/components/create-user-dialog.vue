@@ -14,16 +14,12 @@ import type { Organization } from '@/features/organization/types/organization.ty
 import type { CreateUserRequest } from '../types/user.types'
 import { useForm, toTypedSchema } from '@/lib/validation'
 import { createUserSchema, type CreateUserForm } from '@/lib/validation/schemas/user'
-
-type RoleOption = {
-  label: string
-  value: string
-}
+import type { Role } from '@/features/role/types/role.types'
 
 const props = defineProps<{
   open: boolean
   isSubmitting: boolean
-  roleOptions: RoleOption[]
+  roleOptions: Role[]
   isSuperAdmin: boolean
 }>()
 
@@ -54,7 +50,7 @@ const { handleSubmit, values, errors, resetForm, setFieldValue, meta, defineFiel
     email: '',
     password: '',
     organizationId: '',
-    roles: [] as string[],
+    role: '',
   },
 })
 
@@ -78,7 +74,7 @@ const onSubmit = handleSubmit((formValues) => {
     name: formValues.name,
     email: formValues.email,
     password: formValues.password,
-    role: formValues.roles[0]!,
+    role: formValues.role,
   }
 
   // For Super Admin, include organizationId in payload
@@ -101,14 +97,14 @@ watch(
   () => props.roleOptions,
   options => {
     if (!options.length) {
-      setFieldValue('roles', [])
+      setFieldValue('role', '')
       return
     }
 
-    if (!values.roles.some((role: string) => options.some(option => option.value === role))) {
+    if (!values.role || !options.some(option => option.name === values.role)) {
       const [firstOption] = options
       if (firstOption) {
-        setFieldValue('roles', [firstOption.value])
+        setFieldValue('role', firstOption.name)
       }
     }
   },
@@ -224,8 +220,8 @@ onMounted(() => {
                 role="combobox"
                 class="w-full justify-between"
               >
-                {{ values.roles.length > 0 
-                  ? roleOptions.filter(opt => values.roles.includes(opt.value)).map(opt => opt.label).join(', ')
+              {{ values.role.length > 0 
+                  ? roleOptions.filter(opt => values.role.includes(opt.name)).map(opt => opt.name.toUpperCase()).join(', ')
                   : 'Select roles...' }}
                 <ChevronsUpDownIcon class="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
@@ -237,20 +233,14 @@ onMounted(() => {
                 <CommandGroup>
                   <CommandItem
                     v-for="option in roleOptions"
-                    :key="option.value"
-                    :value="option.value"
+                    :key="option.name"
+                    :value="option.name"
                     @select="() => {
-                      const currentRoles = values.roles
-                      const index = currentRoles.indexOf(option.value)
-                      if (index === -1) {
-                        setFieldValue('roles', [...currentRoles, option.value])
-                      } else {
-                        setFieldValue('roles', currentRoles.filter((r: string) => r !== option.value))
-                      }
+                      setFieldValue('role', option.name)
                     }"
                   >
-                    <CheckIcon :class="cn('mr-2 h-4 w-4', values.roles.includes(option.value) ? 'opacity-100' : 'opacity-0')" />
-                    {{ option.label }}
+                    <CheckIcon :class="cn('mr-2 h-4 w-4', values.role.includes(option.name) ? 'opacity-100' : 'opacity-0')" />
+                    {{ option.name.replace(/_/g, " ").toUpperCase() }}
                   </CommandItem>
                 </CommandGroup>
               </Command>

@@ -17,30 +17,50 @@ export const ROLES = {
 } as const;
 
 export const PERMISSIONS = {
-  // User permissions
+  // ========================================
+  // User Permissions
+  // ========================================
   CREATE_USER: "create-user",
   VIEW_USERS: "view-users",
   UPDATE_USER: "update-user",
   DELETE_USER: "delete-user",
   TRANSFER_USER: "transfer-user",
-  ASSIGN_ROLES: "assign-roles",
 
-  // Organization permissions
+  
+
+  // ========================================
+  // Organization Permissions
+  // ========================================
   CREATE_ORGANIZATION: "create-organization",
   VIEW_ORGANIZATIONS: "view-organizations",
-  UPDATE_ORGANIZATION: "update-organization",
-  DELETE_ORGANIZATION: "delete-organization",
+  UPDATE_ORGANIZATIONS: "update-organization",
+  DELETE_ORGANIZATIONS: "delete-organization",
   VIEW_ORGANIZATION_MEMBERS: "view-organization-members",
 
-  // Role permissions
+  // ========================================
+  // Role & Permission Management
+  // ========================================
   MANAGE_ROLES: "manage-roles",
   VIEW_ROLES: "view-roles",
+  ASSIGN_ROLES: "assign-roles",
   VIEW_PERMISSIONS: "view-permissions",
+  
 
-  // Quality Assessment permissions
-  REVIEW_QUALITY_ASSESSMENTS: "review-quality-assessments",
+  // ========================================
+  // Assessment Permissions
+  // ========================================
   VIEW_ASSESSMENTS: "view-assessments",
+  REVIEW_ASSESSMENTS: "review-assessments",
+  REVIEW_QUALITY_ASSESSMENTS: "review-quality-assessments",
+
+  // ========================================
+  // Standard Permissions
+  // ========================================
   VIEW_STANDARDS: "view-standards",
+
+  // ========================================
+  // Attachment Permissions
+  // ========================================
   VIEW_ATTACHMENTS: "view-attachments",
 } as const;
 

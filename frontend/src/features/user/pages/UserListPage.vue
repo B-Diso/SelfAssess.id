@@ -44,8 +44,13 @@ import EditUserDialog from "../components/edit-user-dialog.vue";
 import DeleteUserDialog from "../components/delete-user-dialog.vue";
 import { toast } from "vue-sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { useRoles } from "@/features/role/composables/useRoles";
 
 const { hasPermission } = useAuth();
+
+// Fetch roles for filter (no params to get all orgs from backend)
+const { data: roleData } = useRoles();
+const roles = computed(() => roleData.value || []);
 
 type SortField = "name" | "email" | "createdAt";
 
@@ -105,15 +110,6 @@ const totalItems = computed(
 );
 const totalPages = computed(() => users.value?.meta?.lastPage ?? 1);
 
-const roleFilterOptions = [
-  ROLES.ORGANIZATION_ADMIN,
-  ROLES.ORGANIZATION_USER,
-] as const;
-
-const createUserRoleOptions = [
-  { label: "Organization Admin", value: ROLES.ORGANIZATION_ADMIN },
-  { label: "Organization User", value: ROLES.ORGANIZATION_USER },
-];
 
 const tableColumns = computed(() =>
   createColumns(
@@ -329,11 +325,11 @@ function resetFilters() {
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem
-                  v-for="role in roleFilterOptions"
-                  :key="role"
-                  :value="role"
+                  v-for="role in roles"
+                  :key="role.id"
+                  :value="role.name"
                 >
-                  {{ role.replace(/_/g, " ") }}
+                  {{ role.name.replace(/_/g, " ").toUpperCase() }}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -391,7 +387,7 @@ function resetFilters() {
       v-model:open="showCreateDialog"
       :is-super-admin="false"
       :is-submitting="createMutation.isPending.value"
-      :role-options="createUserRoleOptions"
+      :role-options="roles"
       @submit="handleCreateUser"
     />
 
@@ -426,12 +422,13 @@ function resetFilters() {
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="organization_admin"
-                  >Organization Admin</SelectItem
+                <SelectItem                  
+                  v-for="role in roles"
+                  :key="role.id"
+                  :value="role.name"
                 >
-                <SelectItem value="organization_user"
-                  >Organization User</SelectItem
-                >
+                  {{ role.name.replace(/_/g, " ").toUpperCase() }}
+                  </SelectItem>
               </SelectContent>
             </Select>
           </div>

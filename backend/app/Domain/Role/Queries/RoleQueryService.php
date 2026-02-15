@@ -11,7 +11,7 @@ class RoleQueryService
 {
     /**
      * Get roles based on user's access level
-     * Super admins see all roles, org admins see organization-level roles only
+     * Super admins see all roles, others see organization-level roles only
      */
     public function getRolesForUser(User $user): Collection
     {

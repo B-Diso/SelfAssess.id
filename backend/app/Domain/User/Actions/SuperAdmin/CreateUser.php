@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\User\Actions\SuperAdmin;
 
 use App\Domain\Organization\Models\Organization;
@@ -13,8 +15,9 @@ class CreateUser
     public function execute(array $data, User $creator): User
     {
         return DB::transaction(function () use ($data, $creator) {
-            if (! $creator->isSuperAdmin()) {
-                throw new InvariantViolationException('Only Super Admin may create users via the admin endpoint.');
+            // Check permission instead of isSuperAdmin() bypass
+            if (!$creator->can('create-user')) {
+                throw new InvariantViolationException('You do not have permission to create users.');
             }
 
             $organizationId = $data['organization_id'] ?? null;

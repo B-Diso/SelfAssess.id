@@ -8,12 +8,13 @@ use App\Domain\Assessment\Enums\AssessmentStatus;
 use App\Domain\Assessment\Models\Assessment;
 use App\Domain\User\Models\User;
 use Illuminate\Validation\ValidationException;
+use App\Exceptions\Domain\InvariantViolationException;
 
 class CancelAssessment
 {
     /**
      * Cancel assessment.
-     * Can only be performed by Super Admin.
+     * Can only be performed by users with review-assessments permission.
      * Draft assessments cannot be cancelled (use delete instead).
      * Finished assessments can be cancelled to revert them.
      *
@@ -30,12 +31,10 @@ class CancelAssessment
             ]);
         }
 
-        // Validate user is Super Admin
-        if (!$user?->isSuperAdmin()) {
-            throw ValidationException::withMessages([
-                'status' => ['Only Super Admin can cancel assessments.']
-            ]);
-        }
+       // Validate user has permission
+       if (!$user?->can('review-assessments')) {
+        throw new InvariantViolationException('You do not have permission to cancel assessments.');
+       }
 
         $assessment->status = AssessmentStatus::CANCELLED->value;
         $assessment->save();

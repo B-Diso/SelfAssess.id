@@ -43,7 +43,7 @@ class SuperAdminUserController extends Controller
             'perPage' => $request->get('perPage', 15),
         ];
 
-        if (! method_exists($request->user(), 'isSuperAdmin') || ! $request->user()->isSuperAdmin()) {
+        if (! $request->user()->isSuperAdmin()) {
             $filters['organization_id'] = $request->user()->organization_id;
         }
 

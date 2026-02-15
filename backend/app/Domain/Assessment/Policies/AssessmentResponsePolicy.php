@@ -18,7 +18,7 @@ class AssessmentResponsePolicy
     {
         $assessment = $response->assessment;
 
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('view-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
@@ -27,11 +27,6 @@ class AssessmentResponsePolicy
     public function update(User $user, AssessmentResponse $response): bool
     {
         $assessment = $response->assessment;
-
-        // Super Admin can always update
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
 
         // Check parent assessment status - use AssessmentStatus enum
         if (in_array($assessment->status, [
@@ -52,7 +47,7 @@ class AssessmentResponsePolicy
             return false;
         }
 
-        return $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('view-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
@@ -65,16 +60,16 @@ class AssessmentResponsePolicy
 
         // Check parent assessment status - finished assessment can't transition responses
         if ($assessment->status === AssessmentStatus::FINISHED) {
-            return $user->isSuperAdmin();
+            return $user->can('review-assessments');
         }
 
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('view-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Determine if user can reject/return response (pending_review → active).
      * Context: User returns response for corrections before it's reviewed.
-     * Allowed: Organization User, Organization Admin, and Super Admin.
+     * Allowed: Users with review-assessments permission.
      */
     public function rejectReview(User $user, AssessmentResponse $response): bool
     {
@@ -85,14 +80,13 @@ class AssessmentResponsePolicy
             return false;
         }
 
-        // Organization users, Organization Admin, and Super Admin can reject/return
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Determine if user can cancel reviewed response (reviewed → active).
      * Context: User found error after approval, needs to return to active for corrections.
-     * Allowed: Organization User, Organization Admin, and Super Admin.
+     * Allowed: Users with review-assessments permission.
      */
     public function cancelReviewed(User $user, AssessmentResponse $response): bool
     {
@@ -103,8 +97,7 @@ class AssessmentResponsePolicy
             return false;
         }
 
-        // Organization users, Organization Admin, and Super Admin can cancel reviewed responses
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
@@ -136,7 +129,7 @@ class AssessmentResponsePolicy
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('view-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
@@ -155,6 +148,6 @@ class AssessmentResponsePolicy
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('view-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 }

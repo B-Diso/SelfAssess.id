@@ -7,13 +7,14 @@ namespace App\Domain\Assessment\Actions\Assessments;
 use App\Domain\Assessment\Enums\AssessmentStatus;
 use App\Domain\Assessment\Models\Assessment;
 use App\Domain\User\Models\User;
+use App\Exceptions\Domain\InvariantViolationException;
 use Illuminate\Validation\ValidationException;
 
 class ActivateAssessment
 {
     /**
      * Activate assessment (draft → active).
-     * Can only be performed by Org Admin.
+     * Can only be performed by users with review-assessments permission.
      *
      * @throws ValidationException
      */
@@ -28,11 +29,9 @@ class ActivateAssessment
             ]);
         }
 
-        // Validate user is Org Admin
-        if (!$user?->isOrgAdmin()) {
-            throw ValidationException::withMessages([
-                'status' => ['Only Organization Admin can activate assessments.']
-            ]);
+        // Validate user has permission
+        if (!$user?->can('review-assessments')) {
+            throw new InvariantViolationException('You do not have permission to activate assessments.');
         }
 
         $assessment->status = AssessmentStatus::ACTIVE->value;

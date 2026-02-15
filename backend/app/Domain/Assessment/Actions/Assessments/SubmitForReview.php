@@ -8,12 +8,13 @@ use App\Domain\Assessment\Enums\AssessmentStatus;
 use App\Domain\Assessment\Models\Assessment;
 use App\Domain\User\Models\User;
 use Illuminate\Validation\ValidationException;
+use App\Exceptions\Domain\InvariantViolationException;
 
 class SubmitForReview
 {
     /**
      * Submit assessment for review (active → pending_review).
-     * Can be performed by Org User or Org Admin with access to the assessment.
+     * Can be performed by any user with access to the assessment.
      *
      * @throws ValidationException
      */
@@ -28,22 +29,9 @@ class SubmitForReview
             ]);
         }
 
-        // Validate user has access to this assessment
-        if (!$user->isOrgAdmin() && !$assessment->isAccessibleBy($user)) {
-            throw ValidationException::withMessages([
-                'assessment' => ['You do not have permission to submit this assessment.']
-            ]);
-        }
-
-        // Validate all responses are reviewed
-        $unreviewedCount = $assessment->responses()
-            ->where('status', '!=', \App\Domain\Assessment\Enums\AssessmentResponseStatus::REVIEWED->value)
-            ->count();
-
-        if ($unreviewedCount > 0) {
-            throw ValidationException::withMessages([
-                'status' => ["Cannot submit assessment. {$unreviewedCount} requirement(s) are not yet reviewed."]
-            ]);
+         // Validate user has access to the assessment's organization
+         if (!$user?->canAccessOrganization($assessment->organization_id)) {
+            throw new InvariantViolationException('You do not have access to this assessment.');
         }
 
         $assessment->status = AssessmentStatus::PENDING_REVIEW->value;

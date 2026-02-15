@@ -5,12 +5,16 @@ import './style.css'
 import { createPinia } from 'pinia'
 import { queryClient } from './lib/api/queryClient'
 import 'vue-sonner/style.css'
+import { registerPermissionDirectives } from './directives'
 
 const app = createApp(App)
 
 // Create and install pinia first
 const pinia = createPinia()
 app.use(pinia)
+
+// Register permission directives
+registerPermissionDirectives(app)
 
 // Now we can safely initialize stores
 import { useAuthStore } from './features/auth/stores/authStore'

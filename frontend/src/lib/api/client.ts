@@ -31,15 +31,11 @@ function isRefreshRequest(url?: string) {
   return !!url && url.includes('/auth/refresh')
 }
 
-async function refreshAccessToken() {
+async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
         const authStore = useAuthStore()
-        // Check if authStore is properly initialized
-        if (!authStore) {
-          throw new Error('Auth store is not initialized')
-        }
 
         // Call refresh endpoint - cookie is automatically sent by browser
         const response = await refreshClient.post<RefreshResponse>(
@@ -57,22 +53,13 @@ async function refreshAccessToken() {
     })()
   }
 
-  try {
-    return await refreshPromise
-  } finally {
-    refreshPromise = null
-  }
+  return refreshPromise
 }
 
 function handleUnauthorized() {
-  try {
-    const authStore = useAuthStore()
-    if (authStore) {
-      authStore.logout()
-    }
-  } catch (error) {
-    console.error('Error in handleUnauthorized:', error)
-  }
+  const authStore = useAuthStore()
+  authStore.logout()
+
   router.push('/login')
 }
 
@@ -88,40 +75,29 @@ export const apiClient = axios.create({
 // Request interceptor - add auth token
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    try {
-      const authStore = useAuthStore()
-      
-      // Check if authStore is properly initialized
-      if (!authStore) {
-        console.warn('Auth store is not initialized, proceeding without token')
-        return config
-      }
+    const authStore = useAuthStore()
 
-      // Use storeToRefs to properly access the refs
-      const { accessToken } = storeToRefs(authStore)
+    // Use storeToRefs to properly access the refs
+    const { accessToken } = storeToRefs(authStore)
 
       // Check if token needs refresh before making the request
       if (!isRefreshRequest(config.url) && accessToken.value && authStore.shouldRefreshToken()) {
         try {
-          await refreshAccessToken()
+          const newToken = await refreshAccessToken()
+          config.headers.Authorization = `Bearer ${newToken}`
         } catch (error) {
           handleUnauthorized()
           return Promise.reject(error)
         }
       }
-
+  
       const token = accessToken.value
-
+  
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`
       }
-
+  
       return config
-    } catch (error) {
-      console.error('Error in request interceptor:', error)
-      // Proceed with the request even if there's an an error with the auth store
-      return config
-    }
   },
   (error) => {
     return Promise.reject(error)
@@ -138,48 +114,33 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as RequestConfigWithRetry | undefined
 
     if (status === 401) {
-      try {
-        const authStore = useAuthStore()
-        
-        // Check if authStore is properly initialized
-        if (!authStore) {
-          console.warn('Auth store is not initialized, redirecting to login')
-          router.push('/login')
-          return Promise.reject(error)
-        }
-        
-        // Use storeToRefs to properly access the refs
-        const { accessToken } = storeToRefs(authStore)
-        const hasToken = !!accessToken.value
+      const authStore = useAuthStore()
+      // Use storeToRefs to properly access the refs
+      const { accessToken } = storeToRefs(authStore)
+      const hasToken = !!accessToken.value
 
-        if (hasToken && originalRequest && !originalRequest._retry && !isRefreshRequest(originalRequest.url)) {
-          originalRequest._retry = true
+      if (hasToken && originalRequest && !originalRequest._retry && !isRefreshRequest(originalRequest.url)) {
+        originalRequest._retry = true
 
-          try {
-            await refreshAccessToken()
-            const newToken = accessToken.value
+        try {
+          const newToken = await refreshAccessToken()
 
-            if (newToken && originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${newToken}`
-            }
-
-            return apiClient(originalRequest)
-          } catch (refreshError) {
-            handleUnauthorized()
-            return Promise.reject(refreshError)
+          if (newToken && originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`
           }
-        }
 
-        if (hasToken) {
+          return apiClient(originalRequest)
+        } catch (refreshError) {
           handleUnauthorized()
+          return Promise.reject(refreshError)
         }
-
-        return Promise.reject(error)
-      } catch (storeError) {
-        console.error('Error accessing auth store in response interceptor:', storeError)
-        router.push('/login')
-        return Promise.reject(error)
       }
+
+      if (hasToken) {
+        handleUnauthorized()
+      }
+
+      return Promise.reject(error)
     }
 
     if (status === 403) {
