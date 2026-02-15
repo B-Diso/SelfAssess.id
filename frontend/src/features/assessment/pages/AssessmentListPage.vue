@@ -42,8 +42,8 @@ const searchInput = ref("");
 const filters = reactive<AssessmentFilters>({
   page: 1,
   perPage: 15,
-  status: "",
-  organizationId: "",
+  status: "all",
+  organizationId: "all",
   search: "",
 });
 
@@ -76,7 +76,7 @@ const totalPages = computed(() => data.value?.meta?.lastPage ?? 1);
 
 // Status filter options - matches new AssessmentStatus enum
 const statusFilterOptions = [
-  { value: "", label: "All Statuses" },
+  { value: "all", label: "All Statuses" },
   { value: "draft", label: "Draft" },
   { value: "active", label: "Active" },
   { value: "pending_review", label: "Pending Review" },
@@ -363,8 +363,8 @@ function handleSortingChange(sortingState: SortingState) {
 function resetFilters() {
   searchInput.value = "";
   filters.search = undefined;
-  filters.status = "";
-  filters.organizationId = "";
+  filters.status = "all";
+  filters.organizationId = "all";
 }
 </script>
 
@@ -395,8 +395,8 @@ function resetFilters() {
         v-model:search-value="searchInput"
         search-placeholder="Search assessments..."
         :show-reset="
-          filters.status !== '' ||
-          filters.organizationId !== '' ||
+          filters.status !== 'all' ||
+          filters.organizationId !== 'all' ||
           searchInput !== ''
         "
         @reset="resetFilters"
@@ -407,18 +407,18 @@ function resetFilters() {
               <SelectTrigger class="h-9 bg-white border-slate-200">
                 <SelectValue placeholder="All Organizations" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">
-                  All Organizations
-                </SelectItem>
-                <SelectItem
-                  v-for="org in organizations"
-                  :key="org.id"
-                  :value="org.id"
-                >
-                  {{ org.name }}
-                </SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="all">
+                    All Organizations
+                  </SelectItem>
+                  <SelectItem
+                    v-for="org in organizations"
+                    :key="org.id"
+                    :value="org.id"
+                  >
+                    {{ org.name }}
+                  </SelectItem>
+                </SelectContent>
             </Select>
 
             <Select v-model="filters.status" class="w-[180px]">

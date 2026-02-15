@@ -6,61 +6,47 @@ namespace App\Domain\Attachment\Policies;
 
 use App\Domain\Attachment\Models\Attachment;
 use App\Domain\User\Models\User;
-use Illuminate\Auth\Access\HandlesAuthorization;
 
 class AttachmentPolicy
 {
-    use HandlesAuthorization;
 
     /**
-     * Perform pre-authorization checks.
-     */
-    public function before(User $user, string $ability): ?bool
-    {
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
-
-        return null;
-    }
-
-    /**
-     * Determine whether the user can view any models.
+     * Determine whether the user can view any attachments.
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->can('view-attachments');
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Determine whether the user can view the attachment.
      */
     public function view(User $user, Attachment $attachment): bool
     {
-        return $user->organization_id === $attachment->organization_id;
+        return $user->organization_id === $attachment->organization_id && $user->can('view-attachments');
     }
 
     /**
-     * Determine whether the user can create models.
+     * Determine whether the user can create attachments.
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->can('view-attachments');
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Determine whether the user can update the attachment.
      */
     public function update(User $user, Attachment $attachment): bool
     {
-        return $user->organization_id === $attachment->organization_id;
+        return $user->organization_id === $attachment->organization_id && $user->can('view-attachments');
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can delete the attachment.
      */
     public function delete(User $user, Attachment $attachment): bool
     {
-        return $user->organization_id === $attachment->organization_id;
+        return $user->organization_id === $attachment->organization_id && $user->can('view-attachments');
     }
 }

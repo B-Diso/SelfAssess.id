@@ -85,12 +85,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed,onErrorCaptured } from "vue";
 import { useRouter } from "vue-router";
 import type { Component } from "vue";
 import { toast } from "vue-sonner";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useUserStore } from "@/features/auth/stores/userStore";
+import { usePermissions } from "@/composables/userPermissions";
 import { storeToRefs } from "pinia";
 import {
   Sidebar,
@@ -119,12 +120,38 @@ import {
   List,
 } from "lucide-vue-next";
 import { PERMISSIONS, ROLES } from "@/lib/constants";
+import { useRoles } from "@/composables/userRoles";
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const router = useRouter();
 const { state } = useSidebar();
-const { user, isSuperAdmin, isOrganizationAdmin } = storeToRefs(userStore);
+const { user } = storeToRefs(userStore);
+
+const { hasPermission } = usePermissions();
+const { hasRole } = useRoles();
+
+// Capture and suppress harmless unmounting errors during navigation
+onErrorCaptured((err) => {
+  if (
+    err instanceof TypeError && 
+    (err.message.includes("reading 'type'") || err.message.includes("reading 'parentNode'"))
+  ) {
+    // This is likely a Vue internal error during unmount/transition race conditions
+    // Suppress it to prevent app crash
+    return false;
+  }
+  // Propagate other errors
+  return true;
+});
+
+// Computed property to check if user data is loaded
+const isUserLoaded = computed(() => {
+  // If we have user data, we consider it loaded regardless of background refreshing
+  if (userStore.user) return true;
+  // Only if we don't have user data do we check loading state
+  return !userStore.isLoading;
+});
 
 type MenuItem = {
   path: string;
@@ -165,6 +192,11 @@ const userInitials = computed(() => {
 });
 
 const menuSections = computed<MenuSection[]>(() => {
+  try {
+    // Return empty array while user data is loading to prevent crash
+    if (!isUserLoaded.value) {
+      return [];
+    }
   const sections: MenuSection[] = [];
 
   const generalItems: MenuItem[] = [
@@ -175,9 +207,9 @@ const menuSections = computed<MenuSection[]>(() => {
     },
   ];
 
+  // Use pure permission check for attachments
   if (
-    isSuperAdmin.value ||
-    userStore.hasPermission(PERMISSIONS.VIEW_ATTACHMENTS)
+    hasPermission(PERMISSIONS.VIEW_ATTACHMENTS)
   ) {
     generalItems.push({
       path: "/attachments",
@@ -193,9 +225,9 @@ const menuSections = computed<MenuSection[]>(() => {
   // Assessment Section
   const assessmentItems: MenuItem[] = [];
 
+  // Use pure permission check for assessments
   if (
-    isSuperAdmin.value ||
-    userStore.hasPermission(PERMISSIONS.VIEW_ASSESSMENTS)
+    hasPermission(PERMISSIONS.VIEW_ASSESSMENTS)
   ) {
     assessmentItems.push({
       path: "/assessments",
@@ -208,12 +240,13 @@ const menuSections = computed<MenuSection[]>(() => {
     sections.push({ title: "Assessment", items: assessmentItems });
   }
 
-  // Standard Section
+  // Standard Section - Hide for Organization Users
   const standardItems: MenuItem[] = [];
 
+  // Use pure permission check for standards
+  // Only show if user has permission AND is NOT an Organization User
   if (
-    isSuperAdmin.value ||
-    userStore.hasPermission(PERMISSIONS.VIEW_STANDARDS)
+    hasPermission(PERMISSIONS.VIEW_STANDARDS)
   ) {
     standardItems.push({
       path: "/standards",
@@ -226,13 +259,19 @@ const menuSections = computed<MenuSection[]>(() => {
     sections.push({ title: "Standard", items: standardItems });
   }
 
-  const canViewUsers = userStore.hasPermission(PERMISSIONS.VIEW_USERS);
-  const showAdminSection =
-    canViewUsers && (isOrganizationAdmin.value || isSuperAdmin.value);
+  // Admin Section - based on user management permission
+  // Show Admin section for ALL users with user management permissions EXCEPT Organization Users
 
-  if (showAdminSection) {
-    sections.push({
-      title: "Admin",
+  let titleAdmin = ""
+  if (hasRole(ROLES.ORGANIZATION_ADMIN) || hasRole(ROLES.SUPER_ADMIN)) {
+    titleAdmin = "Admin"
+  }
+
+  if (
+      hasPermission(PERMISSIONS.VIEW_USERS)
+    ) {
+  sections.push({
+      title: titleAdmin,
       items: [
         {
           path: "/users",
@@ -243,14 +282,12 @@ const menuSections = computed<MenuSection[]>(() => {
     });
   }
 
-  const showSuperAdminSection = isSuperAdmin.value;
+  const superAdminItems: MenuItem[] = [];
 
-  if (showSuperAdminSection) {
-    const superAdminItems: MenuItem[] = [];
-
+  let title = ""
+  if (userStore.isSuperAdmin) {
     if (
-      userStore.hasPermission(PERMISSIONS.VIEW_USERS) &&
-      userStore.hasRole(ROLES.SUPER_ADMIN)
+      hasPermission(PERMISSIONS.VIEW_USERS)
     ) {
       superAdminItems.push({
         path: "/admin/users",
@@ -259,7 +296,11 @@ const menuSections = computed<MenuSection[]>(() => {
       });
     }
 
-    if (userStore.hasPermission(PERMISSIONS.VIEW_ORGANIZATIONS)) {
+    title = "Super Admin"
+  }
+
+    // Organizations - requires create and delete organizations permissions
+    if (hasPermission(PERMISSIONS.VIEW_ORGANIZATIONS)) {
       superAdminItems.push({
         path: "/organizations",
         label: "Organizations",
@@ -268,7 +309,7 @@ const menuSections = computed<MenuSection[]>(() => {
     }
 
     // Standard Report - view assessment adoption across organizations
-    if (isSuperAdmin.value) {
+    if (userStore.isSuperAdmin) {
       superAdminItems.push({
         path: "/standards/report",
         label: "Standard Report",
@@ -277,8 +318,7 @@ const menuSections = computed<MenuSection[]>(() => {
     }
 
     if (
-      userStore.hasPermission(PERMISSIONS.VIEW_ROLES) &&
-      userStore.hasRole(ROLES.SUPER_ADMIN)
+      hasPermission(PERMISSIONS.VIEW_ROLES)
     ) {
       superAdminItems.push({
         path: "/roles",
@@ -287,23 +327,30 @@ const menuSections = computed<MenuSection[]>(() => {
       });
     }
 
-    if (superAdminItems.length > 0) {
-      sections.push({
-        title: "Super Admin",
-        items: superAdminItems,
-      });
-    }
-  }
+  sections.push({
+    title: title,
+    items: superAdminItems,
+  });
 
   return sections;
+} catch (err) {
+    console.error("Error calculating menu sections:", err);
+    return [];
+  }
 });
 
 async function handleLogout() {
-  toast.success("Logged out successfully");
-  authStore.logout();
-  userStore.clearUser();
-  // Redirect to login page
-  window.location.href = "/login";
+  try {
+    toast.success("Logged out successfully");
+    authStore.logout();
+    userStore.clearUser();
+    // Redirect to login page
+    window.location.href = "/login";
+  } catch (err) {
+    console.error("Logout error:", err);
+    // Force redirect even if error
+    window.location.href = "/login";
+  }
 }
 
 function navigateTo(path: string) {

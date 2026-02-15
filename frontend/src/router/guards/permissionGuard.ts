@@ -52,15 +52,15 @@ export function permissionGuard(
     return
   }
 
-  // Check if route requires specific role
-  const requiredRole = to.meta.role as string | undefined
+  // // Check if route requires specific role
+  // const requiredRole = to.meta.role as string | undefined
 
-  if (requiredRole && !userStore.hasRole(requiredRole)) {
-    // User doesn't have required role
-    console.warn(`Access denied: Missing role "${requiredRole}"`)
-    next('/dashboard') // Redirect to dashboard
-    return
-  }
+  // if (requiredRole && !userStore.hasRole(requiredRole)) {
+  //   // User doesn't have required role
+  //   console.warn(`Access denied: Missing role "${requiredRole}"`)
+  //   next('/dashboard') // Redirect to dashboard
+  //   return
+  // }
 
   next()
 }

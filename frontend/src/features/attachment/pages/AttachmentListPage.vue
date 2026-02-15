@@ -12,6 +12,7 @@ import type {
 import { Plus, Loader2, FileText } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { apiClient } from "@/lib/api/client";
 import AttachmentUploadDialog from "@/features/assessment/components/attachment/AttachmentUploadDialog.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
@@ -77,10 +78,27 @@ const tableColumns = computed(() =>
 
 async function handleDownload(attachment: Attachment) {
   try {
-    window.open(attachment.downloadUrl, "_blank");
-    toast.success("Download started");
-  } catch (error) {
-    toast.error(getApiErrorMessage(error, "Failed to download attachment"));
+    toast.loading("Downloading file...", { id: `download-${attachment.id}` });
+    
+    const response = await apiClient.get(`/attachments/${attachment.id}/download`, {
+      responseType: "blob",
+    });
+    // Create download link from blob data
+    const blob = response.data as Blob;
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = attachment.name;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+    toast.success("Download started", { id: `download-${attachment.id}` });
+  } catch(error) {
+    toast.error(getApiErrorMessage(error, "Failed to download attachment"), {
+      id: `download-${attachment.id}`,
+    });
   }
 }
 

@@ -1,5 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { PERMISSIONS, ROLES } from '@/lib/constants'
+import { PERMISSIONS } from '@/lib/constants'
 
 export const roleRoutes: RouteRecordRaw[] = [
   {
@@ -9,7 +9,6 @@ export const roleRoutes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       permission: PERMISSIONS.VIEW_ROLES,
-      role: ROLES.SUPER_ADMIN, // Only super admin can manage roles
     },
   },
   {
@@ -19,7 +18,6 @@ export const roleRoutes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       permission: PERMISSIONS.VIEW_ROLES,
-      role: ROLES.SUPER_ADMIN,
     },
   },
 ]

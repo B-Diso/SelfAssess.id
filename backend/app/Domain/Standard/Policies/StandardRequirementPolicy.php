@@ -19,28 +19,38 @@ class StandardRequirementPolicy
         }
 
         return null;
-    }
-
-    public function viewAny(User $user): bool
+    }    public function viewAny(User $user): bool
     {
-        return true;
+        return $user->can('view-standards');
     }
 
+    /**
+     * Determine whether the user can view the requirement.
+     */
     public function view(User $user, StandardRequirement $requirement): bool
     {
-        return $requirement->section->standard->is_active;
+        return $user->can('view-standards') && $requirement->section->standard->is_active;
     }
 
+    /**
+     * Determine whether the user can create requirements.
+     */
     public function create(User $user): bool
     {
         return false;
     }
 
+    /**
+     * Determine whether the user can update the requirement.
+     */
     public function update(User $user, StandardRequirement $requirement): bool
     {
         return false;
     }
 
+    /**
+     * Determine whether the user can delete the requirement.
+     */
     public function delete(User $user, StandardRequirement $requirement): bool
     {
         return false;

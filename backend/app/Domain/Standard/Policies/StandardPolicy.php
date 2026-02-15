@@ -29,7 +29,7 @@ class StandardPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->can('view-standards');
     }
 
     /**
@@ -37,7 +37,7 @@ class StandardPolicy
      */
     public function view(User $user, Standard $standard): bool
     {
-        return $standard->is_active;
+        return $user->can('view-standards') && $standard->is_active;
     }
 
     /**

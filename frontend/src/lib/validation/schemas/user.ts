@@ -6,7 +6,7 @@ export const createUserSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   organizationId: uuidSchema.optional().or(z.literal('')),
-  roles: z.array(z.string()).min(1, 'At least one role is required'),
+  role: z.string().min(1, 'Role is required'),
 })
 
 export const updateUserSchema = z.object({

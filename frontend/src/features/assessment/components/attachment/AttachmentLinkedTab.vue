@@ -5,6 +5,7 @@ import { attachmentApi } from "../../api/attachmentApi";
 import { useAssessmentStore } from "../../stores/assessmentStore";
 import { toast } from "vue-sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -102,11 +103,29 @@ function formatDate(dateString: string): string {
   });
 }
 
-function downloadAttachment(attachment: Attachment) {
-  if (attachment.downloadUrl) {
-    window.open(attachment.downloadUrl, "_blank");
-  } else {
-    toast.error("Download URL not available");
+async function downloadAttachment(attachment: Attachment) {
+  try {
+    toast.loading("Downloading file...", { id: `download-${attachment.id}` });
+    
+    const response = await apiClient.get(`/attachments/${attachment.id}/download`, {
+      responseType: "blob",
+    });
+    // Create download link from blob data
+    const blob = response.data as Blob;
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = attachment.name;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+    toast.success("Download started", { id: `download-${attachment.id}` });
+  } catch(error) {
+    toast.error(getApiErrorMessage(error, "Failed to download attachment"), {
+      id: `download-${attachment.id}`,
+    });
   }
 }
 

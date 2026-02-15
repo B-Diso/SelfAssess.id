@@ -54,7 +54,7 @@ const searchInput = ref("");
 const filters = reactive({
   page: 1,
   perPage: 15,
-  type: "" as StandardType | "",
+  type: "" as StandardType | "" | "all",
   isActive: undefined as boolean | undefined,
   sortBy: "updatedAt" as SortField,
   sortOrder: "desc" as "asc" | "desc",
@@ -101,7 +101,7 @@ const isUpdating = ref(false);
 const lastErrorToast = ref<string | null>(null);
 
 const typeOptions = [
-  { value: "", label: "All Types" },
+  { value: "all", label: "All Types" },
   { value: "internal", label: "Internal" },
   { value: "regulatory", label: "Regulatory" },
   { value: "standard", label: "Standard" },
@@ -246,7 +246,7 @@ function handleSortingChange(sortingState: SortingState) {
 
 function handleTypeChange(value: unknown) {
   if (typeof value === "string") {
-    filters.type = value as StandardType | "";
+    filters.type = value === "all" ? "" : (value as StandardType | "");
     filters.page = 1;
     syncFiltersToStore();
     store.updateTypeFilter(filters.type);
@@ -410,7 +410,7 @@ store.fetchStandards();
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="true">Active</SelectItem>
                 <SelectItem value="false">Inactive</SelectItem>
               </SelectContent>

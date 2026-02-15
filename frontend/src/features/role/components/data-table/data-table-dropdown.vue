@@ -10,10 +10,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { Role } from '@/features/role/types/role.types'
+import { usePermissions } from '@/composables/userPermissions'
+import { PERMISSIONS } from "@/lib/constants";
 
 interface Props {
   role: Role
 }
+
+const { hasPermission } = usePermissions();
 
 const props = defineProps<Props>()
 
@@ -31,27 +35,31 @@ const handleDelete = () => {
 }
 </script>
 
-<template>
-  <DropdownMenu>
-    <DropdownMenuTrigger as-child>
-      <Button variant="ghost" size="icon">
-        <span class="sr-only">Open menu</span>
-        <MoreHorizontal class="h-4 w-4" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
-      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-      <DropdownMenuItem @click="handleEdit">
-        <Pencil class="mr-2 h-4 w-4" />
-        Edit
-      </DropdownMenuItem>
-      <div v-if="!props.role.isSystem">
-        <DropdownMenuSeparator />
-        <DropdownMenuItem @click="handleDelete" class="text-red-600">
-          <Trash2 class="mr-2 h-4 w-4" />
-          Delete
-        </DropdownMenuItem>
-      </div>
-    </DropdownMenuContent>
-  </DropdownMenu>
+
+  
+  <template>
+    <div v-if="hasPermission(PERMISSIONS.MANAGE_ROLES)">
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="ghost" size="icon">
+            <span class="sr-only">Open menu</span>
+            <MoreHorizontal class="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem @click="handleEdit">
+            <Pencil class="mr-2 h-4 w-4" />
+            Edit
+          </DropdownMenuItem>
+          <div v-if="!props.role.isSystem">
+            <DropdownMenuSeparator />
+            <DropdownMenuItem @click="handleDelete" class="text-red-600">
+              <Trash2 class="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
 </template>

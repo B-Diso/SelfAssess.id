@@ -11,6 +11,7 @@ import {
   useUpdateAdminUser,
 } from "../composables/useAdminUsers";
 import { useAuth } from "@/features/auth/composables/useAuth";
+import { useUserStore } from "@/features/auth/stores/userStore";
 import { useOrganizations } from "@/features/organization/composables/useOrganizations";
 import type { OrganizationFilters } from "@/features/organization/types/organization.types";
 import { PERMISSIONS, ROLES } from "@/lib/constants";
@@ -45,8 +46,12 @@ import EditUserDialog from "../components/edit-user-dialog.vue";
 import DeleteUserDialog from "../components/delete-user-dialog.vue";
 import { toast } from "vue-sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
+import { useRoles } from "@/features/role/composables/useRoles";
+import { storeToRefs } from "pinia";
 
 const { hasPermission, hasRole } = useAuth();
+const userStore = useUserStore();
+const { isSuperAdmin } = storeToRefs(userStore);
 
 type SortField = "name" | "email" | "createdAt" | "organizationName";
 
@@ -64,6 +69,10 @@ const filters = reactive({
 // Fetch organizations for filter (no params to get all orgs from backend)
 const { data: orgData } = useOrganizations(ref({} as OrganizationFilters));
 const organizations = computed(() => orgData.value?.data || []);
+
+// Fetch roles for filter (no params to get all orgs from backend)
+const { data: roleData } = useRoles();
+const roles = computed(() => roleData.value || []);
 
 const filtersRef = computed(() => ({ ...filters }));
 const { data: users, isLoading, error, refetch } = useAdminUsers(filtersRef);
@@ -119,18 +128,6 @@ const tableColumns = computed(() =>
   }),
 );
 
-const roleFilterOptions = [
-  ROLES.SUPER_ADMIN,
-  ROLES.ORGANIZATION_ADMIN,
-  ROLES.ORGANIZATION_USER,
-] as const;
-
-const createUserRoleOptions = [
-  { label: "Super Admin", value: ROLES.SUPER_ADMIN },
-  { label: "Organization Admin", value: ROLES.ORGANIZATION_ADMIN },
-  { label: "Organization User", value: ROLES.ORGANIZATION_USER },
-];
-
 const assignRoleOptions = computed(() => {
   const allRoles: string[] = [
     ROLES.SUPER_ADMIN,
@@ -148,8 +145,6 @@ const assignRoleOptions = computed(() => {
 
   return allRoles.filter((role) => role !== ROLES.SUPER_ADMIN);
 });
-
-const isSuperAdmin = computed(() => hasRole(ROLES.SUPER_ADMIN));
 
 watch(
   () => [filters.sortBy, filters.sortOrder] as [SortField, "asc" | "desc"],
@@ -386,7 +381,7 @@ function resetFilters() {
                 <SelectValue placeholder="All Organizations" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Organizations</SelectItem>
+                <SelectItem value="all">All Organizations</SelectItem>
                 <SelectItem
                   v-for="org in organizations"
                   :key="org.id"
@@ -402,13 +397,13 @@ function resetFilters() {
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem
-                  v-for="role in roleFilterOptions"
-                  :key="role"
-                  :value="role"
+                  v-for="role in roles"
+                  :key="role.id"
+                  :value="role.name"
                 >
-                  {{ role.replace(/_/g, " ") }}
+                  {{ role.name.replace(/_/g, " ").toUpperCase() }}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -488,7 +483,7 @@ function resetFilters() {
       v-model:open="showCreateDialog"
       :is-super-admin="isSuperAdmin"
       :is-submitting="createAdminMutation.isPending.value"
-      :role-options="createUserRoleOptions"
+      :role-options="roles"
       @submit="handleCreateUser"
     />
 
@@ -523,11 +518,11 @@ function resetFilters() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem
-                  v-for="role in assignRoleOptions"
-                  :key="role"
-                  :value="role"
+                  v-for="role in roles"
+                  :key="role.id"
+                  :value="role.name"
                 >
-                  {{ role.replace(/_/g, " ") }}
+                  {{ role.name.replace(/_/g, " ").toUpperCase() }}
                 </SelectItem>
               </SelectContent>
             </Select>

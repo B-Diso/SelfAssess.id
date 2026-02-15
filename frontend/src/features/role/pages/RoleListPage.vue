@@ -8,7 +8,6 @@ import {
   useUpdateRole,
   useDeleteRole,
 } from "../composables/useRoles";
-import { useAuth } from "@/features/auth/composables/useAuth";
 import type {
   Role,
   CreateRoleRequest,
@@ -24,8 +23,10 @@ import { toast } from "vue-sonner";
 import { getApiErrorMessage } from "@/lib/api-error";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import TableToolbar from "@/components/ui/TableToolbar.vue";
+import { usePermissions } from "@/composables/userPermissions";
+import { PERMISSIONS } from "@/lib/constants";
 
-const { isSuperAdmin } = useAuth();
+const { hasPermission } = usePermissions();
 
 const { data: roles, isLoading, error } = useRoles();
 const createMutation = useCreateRole();
@@ -187,7 +188,7 @@ watch(showDeleteDialog, (open) => {
     >
       <template #actions>
         <Button
-          v-if="isSuperAdmin"
+          v-if="hasPermission(PERMISSIONS.MANAGE_ROLES)"
           size="sm"
           class="h-8"
           @click="showCreateDialog = true"

@@ -8,12 +8,13 @@ use App\Domain\Assessment\Enums\AssessmentStatus;
 use App\Domain\Assessment\Models\Assessment;
 use App\Domain\User\Models\User;
 use Illuminate\Validation\ValidationException;
+use App\Exceptions\Domain\InvariantViolationException;
 
 class FinalizeAssessment
 {
     /**
      * Finalize assessment (pending_finish → finished).
-     * Can only be performed by Super Admin.
+     * Can only be performed by users with review-assessments permission.
      *
      * @throws ValidationException
      */
@@ -28,11 +29,9 @@ class FinalizeAssessment
             ]);
         }
 
-        // Validate user is Super Admin
-        if (!$user?->isSuperAdmin()) {
-            throw ValidationException::withMessages([
-                'status' => ['Only Super Admin can finalize assessments.']
-            ]);
+        // Validate user has permission
+        if (!$user?->can('review-assessments')) {
+            throw new InvariantViolationException('You do not have permission to finalize assessments.');
         }
 
         $assessment->status = AssessmentStatus::FINISHED->value;

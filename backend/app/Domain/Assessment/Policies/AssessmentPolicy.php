@@ -12,18 +12,19 @@ class AssessmentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->exists;
+        return $user->can('view-assessments');
     }
 
     public function view(User $user, Assessment $assessment): bool
     {
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('view-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     public function create(User $user): bool
     {
         // Only Super Admin and Organization Admin can create assessments
-        return $user->isSuperAdmin() || $user->isOrganizationAdmin();
+        // Using permission check - super_admin has all permissions via role
+        return $user->can('review-assessments');
     }
 
     public function update(User $user, Assessment $assessment): bool
@@ -37,8 +38,8 @@ class AssessmentPolicy
             return false;
         }
 
-        // Only org admins and super admins can edit assessment details
-        return $user->isSuperAdmin() || $user->isOrganizationAdmin();
+        // Only users with review-assessments permission can edit assessment details
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     public function delete(User $user, Assessment $assessment): bool
@@ -53,17 +54,9 @@ class AssessmentPolicy
             return false;
         }
 
-        // Super Admin can delete any draft/active assessment
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
+       // Check review-assessments permission and organization access
+       return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
 
-        // Organization Admin can only delete assessments from their own organization
-        if ($user->isOrganizationAdmin()) {
-            return $user->organization_id === $assessment->organization_id;
-        }
-
-        return false;
     }
 
     /**
@@ -89,10 +82,6 @@ class AssessmentPolicy
      */
     public function transition(User $user, Assessment $assessment, string $toStatus): bool
     {
-        // Super Admin has access to all transitions
-        if ($user->isSuperAdmin()) {
-            return true;
-        }
 
         return match ($toStatus) {
             AssessmentStatus::ACTIVE->value => $this->canActivate($user, $assessment),
@@ -109,7 +98,7 @@ class AssessmentPolicy
     /**
      * Check if user can activate/reactivate assessment.
      * Allowed from: draft, cancelled, rejected
-     * Only Organization Admin can activate assessments.
+     * Only users with review-assessments permission.
      */
     public function canActivate(User $user, Assessment $assessment): bool
     {
@@ -124,12 +113,12 @@ class AssessmentPolicy
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->isOrganizationAdmin();
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Check if user can submit assessment for review (active → pending_review).
-     * Organization Users and Organization Admins can submit for review.
+     * Users with review-assessments permission can submit for review.
      */
     public function canSubmitForReview(User $user, Assessment $assessment): bool
     {
@@ -137,30 +126,30 @@ class AssessmentPolicy
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Check if user can approve review (pending_review → reviewed).
-     * Organization Admin and Super Admin can approve reviews.
+     * Users with review-assessments permission can approve reviews.
      */
     public function canApproveReview(User $user, Assessment $assessment): bool
     {
-        return $user->isSuperAdmin() || $user->isOrganizationAdmin();
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Check if user can reject review (pending_review → active).
-     * Organization Admin and Super Admin can reject reviews.
+     * Users with review-assessments permission can reject reviews.
      */
     public function canRejectReview(User $user, Assessment $assessment): bool
     {
-        return $user->isSuperAdmin() || $user->isOrganizationAdmin();
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Check if user can request finish (reviewed → pending_finish).
-     * Organization Admin and Super Admin can request finish.
+     * Users with review-assessments permission can request finish.
      */
     public function canRequestFinish(User $user, Assessment $assessment): bool
     {
@@ -168,12 +157,12 @@ class AssessmentPolicy
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->isOrganizationAdmin();
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Check if user can revert from reviewed (reviewed → active).
-     * Organization User, Organization Admin, and Super Admin can revert from reviewed.
+     * Users with review-assessments permission can revert from reviewed.
      */
     public function canRevertFromReviewed(User $user, Assessment $assessment): bool
     {
@@ -181,12 +170,12 @@ class AssessmentPolicy
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Check if user can finalize assessment (pending_finish → finished).
-     * Only Super Admin can finalize assessments.
+     * Users with review-assessments permission can finalize.
      */
     public function canFinalize(User $user, Assessment $assessment): bool
     {
@@ -194,12 +183,12 @@ class AssessmentPolicy
             return false;
         }
 
-        return $user->isSuperAdmin();
+        return $user->can('review-assessments');
     }
 
     /**
      * Check if user can revert from pending finish (pending_finish → active).
-     * Organization User, Organization Admin, and Super Admin can revert from pending finish.
+     * Users with review-assessments permission can revert from pending finish.
      */
     public function canRevertFromPendingFinish(User $user, Assessment $assessment): bool
     {
@@ -207,12 +196,12 @@ class AssessmentPolicy
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->canAccessOrganization($assessment->organization_id);
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Check if user can reject assessment (reviewed/pending_finish → rejected).
-     * Organization Admin and Super Admin can reject assessments.
+     * Users with review-assessments permission can reject assessments.
      */
     public function canRejectAssessment(User $user, Assessment $assessment): bool
     {
@@ -227,12 +216,12 @@ class AssessmentPolicy
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->isOrganizationAdmin();
+        return $user->can('review-assessments') && $user->canAccessOrganization($assessment->organization_id);
     }
 
     /**
      * Check if user can cancel assessment (any status → cancelled).
-     * Only Super Admin can cancel assessments.
+     * Users with review-assessments permission can cancel.
      */
     public function canCancel(User $user, Assessment $assessment): bool
     {
@@ -240,6 +229,6 @@ class AssessmentPolicy
             return false;
         }
 
-        return $user->isSuperAdmin();
+        return $user->can('review-assessments');
     }
 }
